@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include <osmium/handler.hpp>
 #include <osmium/io/pbf_input.hpp>
 #include <osmium/osm/types.hpp>
@@ -5,4 +7,12 @@
 
 #include <rapidjson/rapidjson.h>
 
-int main() {}
+#include "argument_parser.hpp"
+
+int main(int argc, char **argv) try {
+  const auto args = taginfo_validate::commandline::make_arguments(argc, argv);
+
+} catch (const std::exception &e) {
+  std::cerr << "Error: " << e.what() << std::endl;
+  return EXIT_FAILURE;
+}
