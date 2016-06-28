@@ -15,7 +15,7 @@ set(OSMIUM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium-2.7.2/
 find_package(Osmium REQUIRED COMPONENTS pbf)
 
 # Vendored RapidJSON
-set(RAPIDJSON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/rapidjson-1.0.2/include")
+set(RAPIDJSON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/rapidjson-f51d7c9d4b1a9313bde4a5ccf94c4af7089661a8/include")
 
 
 add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cc)

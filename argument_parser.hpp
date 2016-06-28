@@ -30,7 +30,7 @@ arguments make_arguments(int argc, char **argv) {
 
   if (map.count("help")) {
     std::cerr << options << std::endl;
-    std::exit(EXIT_FAILURE);
+    std::exit(EXIT_SUCCESS);
   }
 
   boost::program_options::notify(map);

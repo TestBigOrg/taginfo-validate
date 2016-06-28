@@ -9,6 +9,6 @@
 with import <nixpkgs> {}; {
   devEnv = stdenv.mkDerivation {
     name = "taginfo-validate";
-    buildInputs = [ gcc6 cmake wget ];
+    buildInputs = [ gcc cmake wget zlib boost ];
   };
 }

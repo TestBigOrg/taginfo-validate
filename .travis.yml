@@ -7,8 +7,8 @@ install:
  - source $HOME/.nix-profile/etc/profile.d/nix.sh
 
 before_script:
-  - nix-shell --pure --run 'pushd third_party && ./build.sh && popd'
+  - nix-shell --pure --run 'cd third_party && ./build.sh'
   - nix-shell --pure --run './build.sh'
 
 script:
-  - nix-shell --pure --run 'build/taginfo-validate'
+  - nix-shell --pure --run 'build/taginfo-validate --help'
