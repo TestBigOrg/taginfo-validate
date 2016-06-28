@@ -2,6 +2,8 @@
 
 [![Continuous Integration](https://travis-ci.org/mapbox/taginfo-validate.svg?branch=master)](https://travis-ci.org/mapbox/taginfo-validate)
 
+- [Taginfo schema](https://wiki.openstreetmap.org/wiki/Taginfo/Projects)
+
 ## Building
 
     pushd third_party && ./build.sh && popd
