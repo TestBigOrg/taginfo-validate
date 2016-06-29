@@ -17,6 +17,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 
+#include <boost/functional/hash.hpp>
 #include <boost/filesystem/path.hpp>
 
 namespace taginfo_validate {
@@ -26,19 +27,19 @@ namespace taginfo_validate {
 //  - taginfo_parser(file):
 //      constructor builds the database
 //
-//  - node_tags()
+//  - tags_on_nodes()
 //      returns iterator pair for tags only allowed on nodes
 //
-//  - way_tags()
+//  - tags_on_ways()
 //      returns iterator pair for tags only allowed on ways
 //
-//  - relation_tags()
+//  - tags_on_relations()
 //      returns iterator pair for tags only allowed on relations
 //
-//  - area_tags()
+//  - tags_on_areas()
 //      returns iterator pair for tags only allowed on areas
 //
-//  - all_tags()
+//  - tags_on_any_object()
 //      returns iterator pair for tags allowed on nodes, ways, relations, areas
 //      note: the functions above do not contain items from this catch-all range
 //
@@ -127,7 +128,16 @@ struct taginfo_parser {
     std::string key;
     std::string value;
     object::type type;
+    friend std::size_t hash_value(tag const& t)
+    {
+        std::size_t seed = 0;
+        boost::hash_combine(seed, t.key);
+        boost::hash_combine(seed, t.value);
+        boost::hash_combine(seed, t.type);
 
+        return seed;
+    }
+    friend bool operator==(const tag &lhs, const tag &rhs) { return (lhs.key == rhs.key && lhs.value == rhs.value && lhs.type == rhs.type); };
     friend bool operator<(const tag &lhs, const tag &rhs) { return lhs.type < rhs.type; };
     friend std::ostream &operator<<(std::ostream &out, const tag &rhs) { return out << rhs.key << "=" << rhs.value; }
   };
@@ -136,23 +146,23 @@ struct taginfo_parser {
 
   using tag_iter = decltype(tags)::const_iterator;
 
-  std::pair<tag_iter, tag_iter> node_tags() const {
+  std::pair<tag_iter, tag_iter> tags_on_nodes() const {
     return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::node});
   }
 
-  std::pair<tag_iter, tag_iter> way_tags() const {
+  std::pair<tag_iter, tag_iter> tags_on_ways() const {
     return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::way});
   }
 
-  std::pair<tag_iter, tag_iter> relation_tags() const {
+  std::pair<tag_iter, tag_iter> tags_on_relations() const {
     return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::relation});
   }
 
-  std::pair<tag_iter, tag_iter> area_tags() const {
+  std::pair<tag_iter, tag_iter> tags_on_areas() const {
     return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::area});
   }
 
-  std::pair<tag_iter, tag_iter> all_tags() const {
+  std::pair<tag_iter, tag_iter> tags_on_any_object() const {
     return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::all});
   }
 };
