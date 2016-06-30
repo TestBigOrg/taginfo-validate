@@ -128,6 +128,7 @@ struct taginfo_parser {
     std::string key;
     std::string value;
     object::type type;
+    // make hashable, so tags can be stored in unordered_map
     friend std::size_t hash_value(tag const& t)
     {
         std::size_t seed = 0;

@@ -13,12 +13,7 @@
 #include "argument_parser.hpp"
 #include "taginfo_parser.hpp"
 
-// read pbf file into handler
-// iterate over nodes, ways, relations in handler
-// check that each one is of a type in given taginfo
-// first: store types that are not recognized
-// later: somehow store types that are absent from input pbf
-//      (does this need another field in taginfo_parser?)
+// TODO somehow store types that are absent from input pbf
 
 using namespace taginfo_validate;
 
@@ -30,15 +25,23 @@ struct qa_handler : osmium::handler::Handler {
 
   using tag_range = std::pair<taginfo_parser::tag_iter, taginfo_parser::tag_iter>;
 
-  // if a tag on the object isn't found in the taginfo.json, store in list of unknowns
+  // if pbf tag's key is not found in taginfo list, store tag to list of unrecognized tags
   void storeIfUnknown(const tag_range &tagRange, const osmium::Tag &thePbfTag) {
     auto it = std::find_if(tagRange.first, tagRange.second,
                            [&](const taginfo_parser::tag &Tag) { return !(Tag.key.compare(thePbfTag.key())); });
     auto ait = std::find_if(tags_on_any_object.first, tags_on_any_object.second,
                             [&](const taginfo_parser::tag &Tag) { return !(Tag.key.compare(thePbfTag.key())); });
-    if (it == tagRange.second && ait == tags_on_any_object.second)
+    if (it == tagRange.second && ait == tags_on_any_object.second) {
       unknown_types.insert(
           taginfo_parser::tag{thePbfTag.key(), thePbfTag.value(), taginfo_parser::object::type::node});
+    } else if (it->value.empty()) {
+    // if matching tag in taginfo also specifies a value, check that the pbf
+    // tag's value is also recognized
+        if (thePbfTag.value() != it->value) {
+          unknown_types.insert(
+              taginfo_parser::tag{thePbfTag.key(), thePbfTag.value(), taginfo_parser::object::type::node});
+        }
+    }
   };
 
   void area(const osmium::Area &area) {
