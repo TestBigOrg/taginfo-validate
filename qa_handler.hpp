@@ -20,51 +20,51 @@ struct qa_handler : osmium::handler::Handler {
   using tag_range = std::pair<taginfo_parser::tag_iter, taginfo_parser::tag_iter>;
 
   // if pbf tag's key is not found in taginfo list, store tag to list of unrecognized tags
-  void storeIfUnknown(const tag_range &tagRange, const osmium::Tag &thePbfTag) {
+  void storeIfUnknown(const object::type &objectType, const tag_range &tagRange, const osmium::Tag &thePbfTag) {
     auto it = std::find_if(tagRange.first, tagRange.second,
                            [&](const tag &Tag) { return !(Tag.key.compare(thePbfTag.key())); });
     auto ait = std::find_if(tags_on_any_object.first, tags_on_any_object.second,
                             [&](const tag &Tag) { return !(Tag.key.compare(thePbfTag.key())); });
     if (it == tagRange.second && ait == tags_on_any_object.second) {
       unknown_types.insert(
-          tag{thePbfTag.key(), thePbfTag.value(), object::type::node});
-    } else if (it->value.empty()) {
+          tag{thePbfTag.key(), thePbfTag.value(), objectType});
+    } else if (!it->value.empty()) {
     // if matching tag in taginfo also specifies a value, check that the pbf
     // tag's value is also recognized
         if (thePbfTag.value() != it->value) {
           unknown_types.insert(
-              tag{thePbfTag.key(), thePbfTag.value(), object::type::node});
+              tag{thePbfTag.key(), thePbfTag.value(), objectType});
         }
     }
   };
 
   void area(const osmium::Area &area) {
     for (const auto &pbfTag : area.tags()) {
-      storeIfUnknown(tags_on_areas, pbfTag);
+      storeIfUnknown(object::type::area, tags_on_areas, pbfTag);
     }
   }
 
   void node(const osmium::Node &node) {
     for (const auto &pbfTag : node.tags()) {
-      storeIfUnknown(tags_on_nodes, pbfTag);
+      storeIfUnknown(object::type::node, tags_on_nodes, pbfTag);
     }
   }
 
   void way(const osmium::Way &way) {
     for (const auto &pbfTag : way.tags()) {
-      storeIfUnknown(tags_on_ways, pbfTag);
+      storeIfUnknown(object::type::way, tags_on_ways, pbfTag);
     }
   }
 
   void relation(const osmium::Relation &rel) {
     for (const auto &pbfTag : rel.tags()) {
-      storeIfUnknown(tags_on_relations, pbfTag);
+      storeIfUnknown(object::type::relation, tags_on_relations, pbfTag);
     }
   }
 
   void printUnknowns() {
     for (const auto &unknown : unknown_types) {
-      std::cout << unknown.key << "=" << unknown.value << std::endl;
+      std::cout << unknown.type << "\t" << unknown.key << "\t" << unknown.value << std::endl;
     }
   }
 

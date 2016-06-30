@@ -1,7 +1,7 @@
 #ifndef TAGINFO_VALIDATE_TAG
 #define TAGINFO_VALIDATE_TAG
 
-#include <cstring>
+#include <string>
 #include <ostream>
 
 #include <boost/functional/hash.hpp>
@@ -19,6 +19,31 @@ namespace taginfo_validate {
       //
       all = unknown | node | way | relation | area
     };
+
+    // print type string, not enum
+    std::ostream &operator<<(std::ostream &os, const type &rhs) {
+        switch (rhs) {
+            case type::node:
+                os << "node";
+                break;
+            case type::way:
+                os << "way";
+                break;
+            case type::relation:
+                os << "relation";
+                break;
+            case type::area:
+                os << "area";
+                break;
+            case type::unknown:
+                os << "unknown";
+                break;
+            case type::all:
+                os << "all";
+                break;
+        }
+        return os;
+    }
   }
 
   struct tag {

@@ -1,6 +1,8 @@
 #ifndef TAGINFO_VALIDATE_TAGINFO_PARSER
 #define TAGINFO_VALIDATE_TAGINFO_PARSER
 
+#include <cstring>
+
 #include <algorithm>
 #include <fstream>
 #include <iterator>
