@@ -1,12 +1,9 @@
 #ifndef TAGINFO_VALIDATE_TAGINFO_PARSER
 #define TAGINFO_VALIDATE_TAGINFO_PARSER
 
-#include <cstring>
-
 #include <algorithm>
 #include <fstream>
 #include <iterator>
-#include <ostream>
 #include <stdexcept>
 #include <utility>
 
@@ -17,8 +14,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 
-#include <boost/functional/hash.hpp>
-#include <boost/filesystem/path.hpp>
+#include "tag.hpp"
 
 namespace taginfo_validate {
 
@@ -110,38 +106,6 @@ struct taginfo_parser {
 
     std::sort(begin(tags), end(tags));
   }
-
-  struct object {
-    enum type {
-      unknown = 0u,
-      //
-      node = 1u << 0,
-      way = 1u << 1,
-      relation = 1u << 2,
-      area = 1u << 3,
-      //
-      all = unknown | node | way | relation | area
-    };
-  };
-
-  struct tag {
-    std::string key;
-    std::string value;
-    object::type type;
-    // make hashable, so tags can be stored in unordered_map
-    friend std::size_t hash_value(tag const& t)
-    {
-        std::size_t seed = 0;
-        boost::hash_combine(seed, t.key);
-        boost::hash_combine(seed, t.value);
-        boost::hash_combine(seed, t.type);
-
-        return seed;
-    }
-    friend bool operator==(const tag &lhs, const tag &rhs) { return (lhs.key == rhs.key && lhs.value == rhs.value && lhs.type == rhs.type); };
-    friend bool operator<(const tag &lhs, const tag &rhs) { return lhs.type < rhs.type; };
-    friend std::ostream &operator<<(std::ostream &out, const tag &rhs) { return out << rhs.key << "=" << rhs.value; }
-  };
 
   std::vector<tag> tags;
 
