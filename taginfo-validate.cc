@@ -25,6 +25,7 @@ int main(int argc, char **argv) try {
   osmium::io::Reader osmFileReader(osmFile);
   qa_handler handler(taginfo);
   osmium::apply(osmFileReader, handler);
+  handler.printMissing();
   handler.printUnknowns();
 
 } catch (const std::exception &e) {

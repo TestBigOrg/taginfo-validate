@@ -9,8 +9,8 @@
 #include <stdexcept>
 #include <utility>
 
-#define RAPIDJSON_ASSERT(x)                                                                                                      \
-  if (!static_cast<bool>(x))                                                                                                     \
+#define RAPIDJSON_ASSERT(x)                                                                                            \
+  if (!static_cast<bool>(x))                                                                                           \
     throw std::runtime_error{#x};
 
 #include <rapidjson/document.h>
@@ -41,6 +41,7 @@ namespace taginfo_validate {
 //      returns iterator pair for tags allowed on nodes, ways, relations, areas
 //      note: the functions above do not contain items from this catch-all range
 //
+
 struct taginfo_parser {
   static const constexpr auto data_format = 1;
 
@@ -113,24 +114,30 @@ struct taginfo_parser {
 
   using tag_iter = decltype(tags)::const_iterator;
 
+  struct typeCompare {
+    bool operator()(const tag &left, const tag &right) {
+        return left.type < right.type;
+    }
+  };
+
   std::pair<tag_iter, tag_iter> tags_on_nodes() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::node});
-  }
+    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::node}, typeCompare());
+  };
 
   std::pair<tag_iter, tag_iter> tags_on_ways() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::way});
+    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::way}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_relations() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::relation});
+    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::relation}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_areas() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::area});
+    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::area}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_any_object() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::all});
+    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::all}, typeCompare());
   }
 };
 }
