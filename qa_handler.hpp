@@ -26,11 +26,11 @@ struct qa_handler : osmium::handler::Handler {
   struct keyCompare {
     bool operator()(const tag &left, const tag &right) { return left.key < right.key; }
   };
+
   // if pbf tag is not found in taginfo list, store tag to list of unrecognized tags
   void verifyAndStoreTags(const object::type &objectType, const tag_range &tagRange, const osmium::Tag &thePbfTag) {
-    // Look for the pbf tag's key in the range of expected keys
-    auto matching_key_tags =
-        std::equal_range(tagRange.first, tagRange.second, tag{thePbfTag.key(), {}, objectType}, keyCompare());
+    // Look for the given pbf tag's key in the range of acceptable keys
+    auto matching_key_tags = std::equal_range(tagRange.first, tagRange.second, tag{thePbfTag.key(), {}, objectType}, keyCompare());
     auto matching_key_tags_anyObject = std::equal_range(tags_on_any_object.first, tags_on_any_object.second,
                                                         tag{thePbfTag.key(), {}, object::type::all}, keyCompare());
 
@@ -40,33 +40,38 @@ struct qa_handler : osmium::handler::Handler {
       return;
     }
 
-    for (auto tagIt = matching_key_tags_anyObject.first, end = matching_key_tags_anyObject.second; tagIt != end;
-         ++tagIt) {
-      if (!tagIt->value.empty()) {
-        if (thePbfTag.value() == tagIt->value) {
-          hitlist.insert(tag{thePbfTag.key(), thePbfTag.value(), objectType});
-          return;
+    if (std::distance(matching_key_tags_anyObject.first, matching_key_tags_anyObject.second) != 0) {
+        for (auto tagIt = matching_key_tags_anyObject.first, end = matching_key_tags_anyObject.second; tagIt != end;
+             ++tagIt) {
+          if (!tagIt->value.empty()) {
+            if (thePbfTag.value() == tagIt->value) {
+              hitlist.insert(tag{thePbfTag.key(), thePbfTag.value(), objectType});
+              return;
+            }
+          } else {
+            // this is a tag in the taginfo file that only specifies a key
+            hitlist.insert(tag{thePbfTag.key(), thePbfTag.value(), objectType});
+            return;
+          }
         }
-      } else {
-        // this is a tag in the taginfo file that only specifies a key
-        hitlist.insert(tag{thePbfTag.key(), thePbfTag.value(), objectType});
-        return;
-      }
     }
 
     if (std::distance(matching_key_tags.first, matching_key_tags.second) != 0) {
       for (auto tagIt = matching_key_tags.first, end = matching_key_tags.second; tagIt != end; ++tagIt) {
         if (tagIt->value.empty()) {
-          // this tag only specified an objectType and a tag key
+          // this tag only specified an objectType and a key, it's a hit
           hitlist.insert(tag{thePbfTag.key(), thePbfTag.value(), objectType});
+          return;
         } else {
-          if (thePbfTag.value() != tagIt->value) {
-            unknown_types.insert(tag{thePbfTag.key(), thePbfTag.value(), objectType});
+          if (thePbfTag.value() == tagIt->value) {
+            hitlist.insert(tag{thePbfTag.key(), thePbfTag.value(), objectType});
             return;
           }
         }
       }
     }
+
+    unknown_types.insert(tag{thePbfTag.key(), thePbfTag.value(), objectType});
   };
 
   void way(const osmium::Way &way) {
@@ -75,7 +80,6 @@ struct qa_handler : osmium::handler::Handler {
     }
   }
 
-  /*
   void node(const osmium::Node &node) {
     for (const auto &pbfTag : node.tags()) {
       verifyAndStoreTags(object::type::node, tags_on_nodes, pbfTag);
@@ -93,7 +97,6 @@ struct qa_handler : osmium::handler::Handler {
       verifyAndStoreTags(object::type::relation, tags_on_relations, pbfTag);
     }
   }
-  */
 
   void printUnknowns() {
     std::cout << "Unrecognized types" << std::endl;
@@ -102,33 +105,28 @@ struct qa_handler : osmium::handler::Handler {
     }
   }
 
-  // compare if lhs is found in rhs
-  struct byConditional {
-    bool operator()(const tag &lhs, const tag &rhs) const {
-      if (lhs.key != rhs.key)
-        return false;
-      if (!lhs.value.empty() && (lhs.type != object::type::all))
-        return (std::tie(lhs.value, lhs.type) < std::tie(rhs.value, rhs.type));
-      if (!lhs.value.empty())
-        return (lhs.value < rhs.value);
-      if (lhs.type)
-        return (lhs.type < rhs.type);
-      return true;
-    }
-  };
-
   void printMissing() {
-    std::cout << "Tags found in taginfo.json but not in provided pbf" << std::endl;
+    std::cout << "# valid found tags:" << std::endl;
+    for (const auto &Hit : hitlist) {
+        std::cout << Hit << std::endl;
+    }
+
     std::ostream_iterator<tag> out{std::cout, "\n"};
+
+    std::cout << "# Way tags missing in provided pbf" << std::endl;
+    std::set_difference(tags_on_ways.first, tags_on_ways.second, hitlist.begin(), hitlist.end(), out, byUniqueHits{});
+    std::cout << "# Node tags missing in provided pbf" << std::endl;
     std::set_difference(tags_on_nodes.first, tags_on_nodes.second, hitlist.begin(), hitlist.end(), out,
-                        byConditional{});
-    std::set_difference(tags_on_ways.first, tags_on_ways.second, hitlist.begin(), hitlist.end(), out, byConditional{});
+                        byUniqueHits{});
+    std::cout << "# Relation tags missing in provided pbf" << std::endl;
     std::set_difference(tags_on_relations.first, tags_on_relations.second, hitlist.begin(), hitlist.end(), out,
-                        byConditional{});
+                        byUniqueHits{});
+    std::cout << "# Area tags missing in provided pbf" << std::endl;
     std::set_difference(tags_on_areas.first, tags_on_areas.second, hitlist.begin(), hitlist.end(), out,
-                        byConditional{});
+                        byUniqueHits{});
+    std::cout << "# Tags with no object type specified missing in provided pbf" << std::endl;
     std::set_difference(tags_on_any_object.first, tags_on_any_object.second, hitlist.begin(), hitlist.end(), out,
-                        byConditional{});
+                        byUniqueHits{});
   }
 
   struct byUniqueHits {
@@ -145,7 +143,7 @@ struct qa_handler : osmium::handler::Handler {
   tag_range tags_on_any_object;
 
   std::unordered_set<tag, boost::hash<tag>> unknown_types;
-  std::set<tag, byUniqueHits> hitlist;
+  std::set<tag> hitlist;
 };
 
 #endif
