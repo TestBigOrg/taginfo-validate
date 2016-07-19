@@ -13,20 +13,21 @@
 
 #include "qa_handler.hpp"
 
-// TODO somehow store types that are absent from input pbf
-
 using namespace taginfo_validate;
 
 int main(int argc, char **argv) try {
   const auto args = commandline::make_arguments(argc, argv);
   const taginfo_parser taginfo{args.taginfo};
   const std::string osmFile = args.osm.string();
+  bool unknowns = args.print_unknowns;
 
   osmium::io::Reader osmFileReader(osmFile);
   qa_handler handler(taginfo);
   osmium::apply(osmFileReader, handler);
+  if (unknowns) {
+    handler.printUnknowns();
+  }
   handler.printMissing();
-  handler.printUnknowns();
 
 } catch (const std::exception &e) {
   std::cerr << "Error: " << e.what() << std::endl;

@@ -14,6 +14,7 @@ namespace commandline {
 struct arguments {
   boost::filesystem::path taginfo;
   boost::filesystem::path osm;
+  bool print_unknowns;
 };
 
 arguments make_arguments(int argc, char **argv) {
@@ -23,6 +24,7 @@ arguments make_arguments(int argc, char **argv) {
       ("help", "Help on usage")                                                             //
       ("taginfo", boost::program_options::value<std::string>()->required(), "taginfo.json") //
       ("osm", boost::program_options::value<std::string>()->required(), "extract.osm.pbf")  //
+      ("print-unknowns", boost::program_options::value<bool>()->default_value(false)->implicit_value(true))  //
       ;
 
   boost::program_options::variables_map map;
@@ -35,7 +37,7 @@ arguments make_arguments(int argc, char **argv) {
 
   boost::program_options::notify(map);
 
-  return arguments{map["taginfo"].as<std::string>(), map["osm"].as<std::string>()};
+  return arguments{map["taginfo"].as<std::string>(), map["osm"].as<std::string>(), map["print-unknowns"].as<bool>()};
 }
 }
 }
