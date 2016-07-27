@@ -64,7 +64,7 @@ struct tag {
   };
   // overload less than to make sortable
   friend bool operator<(const tag &lhs, const tag &rhs) { return std::tie(lhs.type, lhs.key, lhs.value) < std::tie(rhs.type, rhs.key, rhs.value); };
-  friend std::ostream &operator<<(std::ostream &out, const tag &rhs) { return out << rhs.type << "\t" << rhs.key << "=" << rhs.value; }
+  friend std::ostream &operator<<(std::ostream &out, const tag &Tag) { return out << Tag.type << "\t" << Tag.key << "=" << (Tag.value.empty() ? "\"\"" : Tag.value); }
 };
 }
 
