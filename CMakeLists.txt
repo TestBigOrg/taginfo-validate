@@ -12,7 +12,7 @@ find_package(Threads REQUIRED)
 # Vendored Libosmium
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium-2.7.2/cmake")
 set(OSMIUM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium-2.7.2/include")
-find_package(Osmium REQUIRED COMPONENTS pbf)
+find_package(Osmium REQUIRED COMPONENTS io)
 
 # Vendored RapidJSON
 set(RAPIDJSON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/rapidjson-f51d7c9d4b1a9313bde4a5ccf94c4af7089661a8/include")

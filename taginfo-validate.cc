@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include <osmium/io/pbf_input.hpp>
+#include <osmium/io/any_input.hpp>
 #include <osmium/visitor.hpp>
 
 #include "argument_parser.hpp"
