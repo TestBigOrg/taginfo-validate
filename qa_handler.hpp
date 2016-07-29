@@ -142,7 +142,11 @@ struct qa_handler : osmium::handler::Handler {
 
   struct byUniqueHits {
     bool operator()(const tag &lhs, const tag &rhs) {
-      return (std::tie(lhs.type, lhs.key, lhs.value) < std::tie(rhs.type, rhs.key, rhs.value));
+      if (lhs.value.empty()) {
+        return (std::tie(lhs.type, lhs.key) < std::tie(rhs.type, rhs.key));
+      } else {
+        return (std::tie(lhs.type, lhs.key, lhs.value) < std::tie(rhs.type, rhs.key, rhs.value));
+      }
     }
   };
 
