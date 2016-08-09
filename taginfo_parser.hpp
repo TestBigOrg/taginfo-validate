@@ -8,6 +8,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <utility>
+#include <unordered_map>
 
 #define RAPIDJSON_ASSERT(x)                                                                                            \
   if (!static_cast<bool>(x))                                                                                           \
@@ -45,7 +46,7 @@ namespace taginfo_validate {
 struct taginfo_parser {
   static const constexpr auto data_format = 1;
 
-  explicit taginfo_parser(const boost::filesystem::path &taginfo) {
+  explicit taginfo_parser(const boost::filesystem::path &taginfo, std::unordered_map<std::string, uint32_t>&string_catalogue) {
     std::ifstream taginfo_file{taginfo.string()};
 
     if (!taginfo_file)
@@ -67,7 +68,7 @@ struct taginfo_parser {
     tags.resize(json_tags.Size());
 
     // key, value (optional), type (optional)
-    std::transform(json_tags.Begin(), json_tags.End(), begin(tags), [](const rapidjson::Value &json_tag) {
+    std::transform(json_tags.Begin(), json_tags.End(), begin(tags), [&](const rapidjson::Value &json_tag) {
       const auto *key = json_tag["key"].GetString();
 
       const auto *value = [&] {
@@ -104,7 +105,13 @@ struct taginfo_parser {
         }
       }();
 
-      return tag{key, value, type};
+      if (string_catalogue.find(key) == string_catalogue.end()) {
+        string_catalogue[key] = string_catalogue.size();
+      }
+      if (string_catalogue.find(value) == string_catalogue.end()) {
+          string_catalogue[value] = string_catalogue.size();
+      }
+      return tag{string_catalogue[key], string_catalogue[value], type};
     });
 
     std::sort(begin(tags), end(tags));
