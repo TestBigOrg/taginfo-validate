@@ -128,23 +128,23 @@ struct taginfo_parser {
   };
 
   std::pair<tag_iter, tag_iter> tags_on_nodes() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::node}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::node}, typeCompare());
   };
 
   std::pair<tag_iter, tag_iter> tags_on_ways() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::way}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::way}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_relations() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::relation}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::relation}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_areas() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::area}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::area}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_any_object() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::all}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::all}, typeCompare());
   }
 };
 }

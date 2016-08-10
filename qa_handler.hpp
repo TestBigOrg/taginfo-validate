@@ -40,9 +40,9 @@ struct qa_handler : osmium::handler::Handler {
     }
     // Look for the given pbf tag's key in the range of acceptable keys
     auto matching_key_tags =
-        std::equal_range(tagRange.first, tagRange.second, tag{ST[thePbfTag.key()], {}, objectType}, keyCompare());
+        std::equal_range(tagRange.first, tagRange.second, tag{ST[thePbfTag.key()], 0, objectType}, keyCompare());
     auto matching_key_tags_anyObject = std::equal_range(tags_on_any_object.first, tags_on_any_object.second,
-                                                        tag{ST[thePbfTag.key()], {}, object::type::all}, keyCompare());
+                                                        tag{ST[thePbfTag.key()], 0, object::type::all}, keyCompare());
 
     if (std::distance(matching_key_tags_anyObject.first, matching_key_tags_anyObject.second) == 0 &&
         std::distance(matching_key_tags.first, matching_key_tags.second) == 0) {
