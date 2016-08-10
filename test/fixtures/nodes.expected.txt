@@ -1,9 +1,9 @@
 # valid found tags, expected on any object type:
-node	width=10
+node width=10
 # Way tags missing in provided pbf
 # Node tags missing in provided pbf
-node	highway=spacejam
-node	spacejam=""
+node highway=spacejam
+node spacejam=""
 # Relation tags missing in provided pbf
 # Area tags missing in provided pbf
 # Tags with no object type specified missing in provided pbf

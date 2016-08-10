@@ -18,6 +18,7 @@ using namespace taginfo_validate;
 
 int main(int argc, char **argv) try {
   std::unordered_map<std::string, uint32_t> string_catalogue;
+  string_catalogue[""] = 0;
 
   const auto args = commandline::make_arguments(argc, argv);
   const taginfo_parser taginfo{args.taginfo, string_catalogue};
