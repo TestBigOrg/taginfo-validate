@@ -7,8 +7,8 @@
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
-#include <utility>
 #include <unordered_map>
+#include <utility>
 
 #define RAPIDJSON_ASSERT(x)                                                                                            \
   if (!static_cast<bool>(x))                                                                                           \
@@ -46,7 +46,8 @@ namespace taginfo_validate {
 struct taginfo_parser {
   static const constexpr auto data_format = 1;
 
-  explicit taginfo_parser(const boost::filesystem::path &taginfo, std::unordered_map<std::string, uint32_t>&string_catalogue) {
+  explicit taginfo_parser(const boost::filesystem::path &taginfo, std::unordered_map<std::string, uint32_t> &ST,
+                          std::unordered_map<uint32_t, std::string> &reverse_ST) {
     std::ifstream taginfo_file{taginfo.string()};
 
     if (!taginfo_file)
@@ -105,13 +106,14 @@ struct taginfo_parser {
         }
       }();
 
-      if (string_catalogue.find(key) == string_catalogue.end()) {
-        string_catalogue[key] = string_catalogue.size();
-      }
-      if (string_catalogue.find(value) == string_catalogue.end()) {
-          string_catalogue[value] = string_catalogue.size();
-      }
-      return tag{string_catalogue[key], string_catalogue[value], type};
+      // Add catalogue and reverse catalogue entry for parsed tag
+      ST.insert(std::make_pair(key, ST.size()));
+      reverse_ST.insert({ST.at(key), key});
+
+      ST.insert({value, ST.size()});
+      reverse_ST.insert({ST.at(value), value});
+
+      return tag{ST[key], ST[value], type};
     });
 
     std::sort(begin(tags), end(tags));
@@ -122,9 +124,7 @@ struct taginfo_parser {
   using tag_iter = decltype(tags)::const_iterator;
 
   struct typeCompare {
-    bool operator()(const tag &left, const tag &right) {
-        return left.type < right.type;
-    }
+    bool operator()(const tag &left, const tag &right) { return left.type < right.type; }
   };
 
   std::pair<tag_iter, tag_iter> tags_on_nodes() const {

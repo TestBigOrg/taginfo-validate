@@ -18,10 +18,12 @@
 using namespace taginfo_validate;
 
 struct qa_handler : osmium::handler::Handler {
-  qa_handler(const taginfo_parser &taginfo, std::unordered_map<std::string, uint32_t> &string_catalogue)
+  qa_handler(const taginfo_parser &taginfo, std::unordered_map<std::string, uint32_t> &string_catalogue,
+             std::unordered_map<uint32_t, std::string> &reverse_string_catalogue, bool unknowns)
       : tags_on_areas(taginfo.tags_on_areas()), tags_on_nodes(taginfo.tags_on_nodes()),
         tags_on_ways(taginfo.tags_on_ways()), tags_on_relations(taginfo.tags_on_relations()),
-        tags_on_any_object(taginfo.tags_on_any_object()), ST(string_catalogue){};
+        tags_on_any_object(taginfo.tags_on_any_object()), ST(string_catalogue), reverse_ST(reverse_string_catalogue),
+        store_unknowns(unknowns){};
 
   using tag_range = std::pair<taginfo_parser::tag_iter, taginfo_parser::tag_iter>;
   struct keyCompare {
@@ -31,59 +33,63 @@ struct qa_handler : osmium::handler::Handler {
   // Given an object type, a range of tags of that object type and a pbf tag, check
   // if the pbf tag is found in the range of tags, or store the pbf tag to list of unrecognized tags
   void verifyAndStoreTags(const object::type &objectType, const tag_range &tagRange, const osmium::Tag &thePbfTag) {
-    // first store in tag dictionary
-    if (ST.find(thePbfTag.key()) == ST.end()) {
-      ST[thePbfTag.key()] = ST.size();
-    }
-    if (ST.find(thePbfTag.value()) == ST.end()) {
-      ST[thePbfTag.value()] = ST.size();
-    }
     // Look for the given pbf tag's key in the range of acceptable keys
-    auto matching_key_tags =
-        std::equal_range(tagRange.first, tagRange.second, tag{ST[thePbfTag.key()], 0, objectType}, keyCompare());
-    auto matching_key_tags_anyObject = std::equal_range(tags_on_any_object.first, tags_on_any_object.second,
-                                                        tag{ST[thePbfTag.key()], 0, object::type::all}, keyCompare());
+    auto range_keymatch_tags =
+        std::equal_range(tagRange.first, tagRange.second, tag{ST.at(thePbfTag.key()), 0, objectType}, keyCompare());
+    auto range_keymatch_tags_anyObj = std::equal_range(tags_on_any_object.first, tags_on_any_object.second,
+                                                        tag{ST.at(thePbfTag.key()), 0, object::type::all}, keyCompare());
 
-    if (std::distance(matching_key_tags_anyObject.first, matching_key_tags_anyObject.second) == 0 &&
-        std::distance(matching_key_tags.first, matching_key_tags.second) == 0) {
-      unknown_types.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+    if (std::distance(range_keymatch_tags_anyObj.first, range_keymatch_tags_anyObj.second) == 0 &&
+        std::distance(range_keymatch_tags.first, range_keymatch_tags.second) == 0) {
+      if (store_unknowns) {
+        ST.insert({thePbfTag.key(), ST.size()});
+        unknown_types.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+      }
       return;
     }
 
     // first check if given pbf tag matches an entry in the range of taginfo tags
     // with no object type specified because it's more likely to match first
-    if (std::distance(matching_key_tags_anyObject.first, matching_key_tags_anyObject.second) != 0) {
-      for (auto tagIt = matching_key_tags_anyObject.first, end = matching_key_tags_anyObject.second; tagIt != end;
+    if (std::distance(range_keymatch_tags_anyObj.first, range_keymatch_tags_anyObj.second) != 0) {
+      for (auto tagIt = range_keymatch_tags_anyObj.first, end = range_keymatch_tags_anyObj.second; tagIt != end;
            ++tagIt) {
         if (tagIt->value == 0) {
           // this is a tag in the taginfo file that only specifies a key
-          hitlistAnyType.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+          ST.insert({thePbfTag.key(), ST.size()});
+          hitlistAnyType.insert(tag{ST.at(thePbfTag.key()), 0, objectType});
           return;
         } else {
-          if (ST[thePbfTag.value()] == tagIt->value) {
-            hitlistAnyType.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+          if (thePbfTag.value() == reverse_ST.at(tagIt->value)) {
+            ST.insert({thePbfTag.key(), ST.size()});
+            ST.insert({thePbfTag.value(), ST.size()});
+            hitlistAnyType.insert(tag{ST.at(thePbfTag.key()), ST.at(thePbfTag.value()), objectType});
             return;
           }
         }
       }
     }
 
-    if (std::distance(matching_key_tags.first, matching_key_tags.second) != 0) {
-      for (auto tagIt = matching_key_tags.first, end = matching_key_tags.second; tagIt != end; ++tagIt) {
+    if (std::distance(range_keymatch_tags.first, range_keymatch_tags.second) != 0) {
+      for (auto tagIt = range_keymatch_tags.first, end = range_keymatch_tags.second; tagIt != end; ++tagIt) {
         if (tagIt->value == 0) {
           // this tag only specified an objectType and a key, it's a hit
-          hitlistWithType.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+          ST.insert({thePbfTag.key(), ST.size()});
+          hitlistWithType.insert(tag{ST.at(thePbfTag.key()), 0, objectType});
           return;
         } else {
-          if (ST[thePbfTag.value()] == tagIt->value) {
-            hitlistWithType.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+          if (thePbfTag.value() == reverse_ST.at(tagIt->value)) {
+            hitlistWithType.insert(tag{ST.at(thePbfTag.key()), ST.at(thePbfTag.value()), objectType});
             return;
           }
         }
       }
     }
 
-    unknown_types.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+    if (store_unknowns) {
+      ST.insert({thePbfTag.key(), ST.size()});
+      ST.insert({thePbfTag.value(), ST.size()});
+      unknown_types.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+    }
   };
 
   void way(const osmium::Way &way) {
@@ -119,23 +125,31 @@ struct qa_handler : osmium::handler::Handler {
 
   void printTags(std::vector<tag> &tagVector) {
     for (const auto &tag : tagVector) {
-      std::cout << tag.type << " " << reverse_ST[tag.key] << "=" << (tag.value == 0 ? "\"\"" : reverse_ST[tag.value]) << std::endl;
+      std::cout << tag.type << " " << reverse_ST[tag.key] << "=" << (tag.value == 0 ? "\"\"" : reverse_ST[tag.value])
+                << std::endl;
     }
+    std::cout << "\n" << std::endl;
   }
 
   void reverseCatalogue(const std::unordered_map<std::string, uint32_t> &original) {
-    std::transform(begin(original), end(original), std::inserter(reverse_ST, std::end(reverse_ST)),
-                   [&](const std::pair<std::string, uint32_t> &entry) {
-                     return std::make_pair(entry.second, entry.first);
-                   });
+    std::transform(
+        begin(original), end(original), std::inserter(reverse_ST, std::end(reverse_ST)),
+        [&](const std::pair<std::string, uint32_t> &entry) { return std::make_pair(entry.second, entry.first); });
   }
 
   void printMissing() {
     reverseCatalogue(ST);
     std::cout << "# valid found tags, expected on any object type:" << std::endl;
     for (const auto &Hit : hitlistAnyType) {
-        std::cout << Hit.type << " " << reverse_ST[Hit.key] << "=" << reverse_ST[Hit.value] << std::endl;
+      std::cout << Hit.type << " " << reverse_ST[Hit.key] << "=" << (Hit.value == 0 ? "\"\"" : reverse_ST[Hit.value]) << std::endl;
     }
+    std::cout << "\n" << std::endl;
+
+    std::cout << "# valid found tags, expected on any object type:" << std::endl;
+    for (const auto &Hit : hitlistWithType) {
+      std::cout << Hit.type << " " << reverse_ST[Hit.key] << "=" << (Hit.value == 0 ? "\"\"" : reverse_ST[Hit.value]) << std::endl;
+    }
+    std::cout << "\n" << std::endl;
 
     std::vector<tag> missing_ways;
     std::cout << "# Way tags missing in provided pbf" << std::endl;
@@ -197,6 +211,7 @@ struct qa_handler : osmium::handler::Handler {
   // catalogues mapping tag values to integers
   std::unordered_map<std::string, uint32_t> ST;
   std::unordered_map<uint32_t, std::string> reverse_ST;
+  bool store_unknowns;
 
   std::unordered_set<tag, boost::hash<tag>> unknown_types;
   std::set<tag> hitlistWithType;
