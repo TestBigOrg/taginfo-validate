@@ -47,10 +47,10 @@ std::ostream &operator<<(std::ostream &os, const type &rhs) {
 }
 
 struct tag {
-  std::string key;
-  std::string value;
+  uint32_t key;
+  uint32_t value;
   object::type type;
-  // make hashable, so tags can be stored in unordered_map
+  // make hashable, so tags can be stored in unordered_set
   friend std::size_t hash_value(tag const &t) {
     std::size_t seed = 0;
     boost::hash_combine(seed, t.key);
@@ -64,7 +64,6 @@ struct tag {
   };
   // overload less than to make sortable
   friend bool operator<(const tag &lhs, const tag &rhs) { return std::tie(lhs.type, lhs.key, lhs.value) < std::tie(rhs.type, rhs.key, rhs.value); };
-  friend std::ostream &operator<<(std::ostream &out, const tag &Tag) { return out << Tag.type << "\t" << Tag.key << "=" << (Tag.value.empty() ? "\"\"" : Tag.value); }
 };
 }
 

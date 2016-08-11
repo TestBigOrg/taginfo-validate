@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
+#include <unordered_map>
 #include <utility>
 
 #define RAPIDJSON_ASSERT(x)                                                                                            \
@@ -45,7 +46,8 @@ namespace taginfo_validate {
 struct taginfo_parser {
   static const constexpr auto data_format = 1;
 
-  explicit taginfo_parser(const boost::filesystem::path &taginfo) {
+  explicit taginfo_parser(const boost::filesystem::path &taginfo, std::unordered_map<std::string, uint32_t> &ST,
+                          std::unordered_map<uint32_t, std::string> &reverse_ST) {
     std::ifstream taginfo_file{taginfo.string()};
 
     if (!taginfo_file)
@@ -67,7 +69,7 @@ struct taginfo_parser {
     tags.resize(json_tags.Size());
 
     // key, value (optional), type (optional)
-    std::transform(json_tags.Begin(), json_tags.End(), begin(tags), [](const rapidjson::Value &json_tag) {
+    std::transform(json_tags.Begin(), json_tags.End(), begin(tags), [&](const rapidjson::Value &json_tag) {
       const auto *key = json_tag["key"].GetString();
 
       const auto *value = [&] {
@@ -104,7 +106,14 @@ struct taginfo_parser {
         }
       }();
 
-      return tag{key, value, type};
+      // Add catalogue and reverse catalogue entry for parsed tag
+      ST.insert(std::make_pair(key, ST.size()));
+      reverse_ST.insert({ST.at(key), key});
+
+      ST.insert({value, ST.size()});
+      reverse_ST.insert({ST.at(value), value});
+
+      return tag{ST[key], ST[value], type};
     });
 
     std::sort(begin(tags), end(tags));
@@ -115,29 +124,27 @@ struct taginfo_parser {
   using tag_iter = decltype(tags)::const_iterator;
 
   struct typeCompare {
-    bool operator()(const tag &left, const tag &right) {
-        return left.type < right.type;
-    }
+    bool operator()(const tag &left, const tag &right) { return left.type < right.type; }
   };
 
   std::pair<tag_iter, tag_iter> tags_on_nodes() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::node}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::node}, typeCompare());
   };
 
   std::pair<tag_iter, tag_iter> tags_on_ways() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::way}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::way}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_relations() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::relation}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::relation}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_areas() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::area}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::area}, typeCompare());
   }
 
   std::pair<tag_iter, tag_iter> tags_on_any_object() const {
-    return std::equal_range(begin(tags), end(tags), tag{{}, {}, object::type::all}, typeCompare());
+    return std::equal_range(begin(tags), end(tags), tag{0, 0, object::type::all}, typeCompare());
   }
 };
 }
