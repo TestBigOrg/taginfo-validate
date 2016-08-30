@@ -33,6 +33,18 @@ struct qa_handler : osmium::handler::Handler {
   // Given an object type, a range of tags of that object type and a pbf tag, check
   // if the pbf tag is found in the range of tags, or store the pbf tag to list of unrecognized tags
   void verifyAndStoreTags(const object::type &objectType, const tag_range &tagRange, const osmium::Tag &thePbfTag) {
+    // If the key of the pbf tag in question is not already the string catalogue,
+    // we can assume that it's not in the provided taginfo file and skip it
+    if (ST.find(thePbfTag.key()) == ST.end()) {
+      if (store_unknowns) {
+        ST.insert({thePbfTag.key(), ST.size()});
+        unknown_types.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
+      }
+      return;
+    } else {
+        ST.insert({thePbfTag.key(), ST.size()});
+    }
+
     // Look for the given pbf tag's key in the range of acceptable keys
     auto range_keymatch_tags =
         std::equal_range(tagRange.first, tagRange.second, tag{ST.at(thePbfTag.key()), 0, objectType}, keyCompare());
@@ -42,7 +54,6 @@ struct qa_handler : osmium::handler::Handler {
     if (std::distance(range_keymatch_tags_anyObj.first, range_keymatch_tags_anyObj.second) == 0 &&
         std::distance(range_keymatch_tags.first, range_keymatch_tags.second) == 0) {
       if (store_unknowns) {
-        ST.insert({thePbfTag.key(), ST.size()});
         unknown_types.insert(tag{ST[thePbfTag.key()], ST[thePbfTag.value()], objectType});
       }
       return;
@@ -55,12 +66,10 @@ struct qa_handler : osmium::handler::Handler {
            ++tagIt) {
         if (tagIt->value == 0) {
           // this is a tag in the taginfo file that only specifies a key
-          ST.insert({thePbfTag.key(), ST.size()});
           hitlistAnyType.insert(tag{ST.at(thePbfTag.key()), 0, objectType});
           return;
         } else {
           if (thePbfTag.value() == reverse_ST.at(tagIt->value)) {
-            ST.insert({thePbfTag.key(), ST.size()});
             ST.insert({thePbfTag.value(), ST.size()});
             hitlistAnyType.insert(tag{ST.at(thePbfTag.key()), ST.at(thePbfTag.value()), objectType});
             return;

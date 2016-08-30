@@ -2,6 +2,9 @@
 <osm version="0.6" generator="CGImap 0.0.2">
     <bounds minlat="54.0889580" minlon="12.2487570" maxlat="54.0913900" maxlon="12.2524800"/>
     <node id="1" lat="54.0901746" lon="12.2482632" user="pikachu" uid="46882" visible="true" version="1" changeset="676636" timestamp="2008-09-21T21:37:45Z">
+    <tag k="cat" v="traffic_signals"/>
+    </node>
+    <node id="5" lat="54.0902846" lon="12.2482731" user="pikachu" uid="46882" visible="true" version="1" changeset="676636" timestamp="2008-09-21T21:37:45Z">
     <tag k="highway" v="traffic_signals"/>
     </node>
 
